@@ -7,6 +7,7 @@
 
 typedef struct BinarySearchTree {
     int data;
+    int count;
     struct BinarySearchTree *left;
     struct BinarySearchTree *right;
 } bstNode;
@@ -15,25 +16,28 @@ bstNode *createNode(int data) {
     bstNode *node = (bstNode *)malloc(sizeof(bstNode));
     node->data = data;
     node->left = node->right = NULL;
+    node->count = 1;
     return node;
 }
 
-bool isEmptyTree(bstNode *root) { return root == NULL; }
+bool isNullChild(bstNode *root) { return root == NULL; }
 
 bstNode *insert(bstNode *root, int data) {
-    if (isEmptyTree(root)) {
+    if (isNullChild(root)) {
         root = createNode(data);
-    } else if (data <= root->data) {
+    } else if (data < root->data) {
         root->left = insert(root->left, data);
-    } else {
+    } else if (data > root->data) {
         root->right = insert(root->right, data);
+    } else {
+        root->count++;
     }
 
     return root;
 }
 
 bstNode *getNode(bstNode *root, int data) {
-    if (root == NULL || data == root->data) {
+    if (isNullChild(root) || data == root->data) {
         return root;
     }
     if (data < root->data) {
@@ -43,21 +47,21 @@ bstNode *getNode(bstNode *root, int data) {
 }
 
 bstNode *getMin(bstNode *root) {
-    if (isEmptyTree(root) || root->left == NULL) {
+    if (isNullChild(root) || root->left == NULL) {
         return root;
     }
     return getMin(root->left);
 }
 
 bstNode *getMax(bstNode *root) {
-    if (isEmptyTree(root) || root->right == NULL) {
+    if (isNullChild(root) || root->right == NULL) {
         return root;
     }
     return getMax(root->right);
 }
 
 int heightOfTree(bstNode *root) {
-    if (isEmptyTree(root)) {
+    if (isNullChild(root)) {
         return -1;
     }
 
@@ -68,7 +72,7 @@ int heightOfTree(bstNode *root) {
 }
 
 void levelorderTraversal(bstNode *root) {
-    if (isEmptyTree(root)) {
+    if (isNullChild(root)) {
         puts("Can not traverse the tree, since tree is empty.");
         return;
     }
@@ -81,7 +85,7 @@ void levelorderTraversal(bstNode *root) {
 
     while (!isEmptyQueue(head)) {
         bstNode *current = (bstNode *)rear(tail);
-        printf("%d ", current->data);
+        printf("%d(%d) ", current->data, current->count);
 
         if (current->left != NULL) {
             enqueue(&head, &tail, current->left, sizeof(bstNode));
@@ -96,34 +100,34 @@ void levelorderTraversal(bstNode *root) {
 }
 
 void preorderTraversal(bstNode *root) {
-    if (isEmptyTree(root)) {
+    if (isNullChild(root)) {
         return;
     }
-    printf("%d ", root->data);
+    printf("%d(%d) ", root->data, root->count);
     preorderTraversal(root->left);
     preorderTraversal(root->right);
 }
 
 void inorderTraversal(bstNode *root) {
-    if (isEmptyTree(root)) {
+    if (isNullChild(root)) {
         return;
     }
     inorderTraversal(root->left);
-    printf("%d ", root->data);
+    printf("%d(%d) ", root->data, root->count);
     inorderTraversal(root->right);
 }
 
 void postorderTraversal(bstNode *root) {
-    if (isEmptyTree(root)) {
+    if (isNullChild(root)) {
         return;
     }
     postorderTraversal(root->left);
     postorderTraversal(root->right);
-    printf("%d ", root->data);
+    printf("%d(%d) ", root->data, root->count);
 }
 
 bool bstUtil(bstNode *root, int min, int max) {
-    if (isEmptyTree(root)) {
+    if (isNullChild(root)) {
         return true;
     }
     if (root->data > min && root->data < max &&
@@ -139,7 +143,7 @@ bool isBinarySeachTree(bstNode *root) {
 }
 
 void bstUtil2(bstNode *root, qNode **head, qNode **tail) {
-    if (isEmptyTree(root)) {
+    if (isNullChild(root)) {
         return;
     }
     bstUtil2(root->left, &*head, &*tail);
@@ -173,28 +177,34 @@ bool isBinarySearchTree2(bstNode *root) {
 }
 
 bstNode *deleteNode(bstNode *root, int data) {
-    if (isEmptyTree(root)) {
+    if (isNullChild(root)) {
         return root;
-    } else if (data < root->data) { // Finding node from left subtree
+    } else if (data < root->data) {
         root->left = deleteNode(root->left, data);
-    } else if (data > root->data) { // Finding node from right subtree
+    } else if (data > root->data) {
         root->right = deleteNode(root->right, data);
-    } else { // Found, start to delete
-        if (root->left == NULL &&
-            root->right == NULL) { // Case 1: Node has no child
+    } else {
+        // Case 0: Remove duplicates
+        if (root->count > 1) {
+            root->count--;
+        }
+        // Case 1: Node has no child
+        else if (isNullChild(root->left) && isNullChild(root->right)) {
             free(root);
             root = NULL;
-        } else if (root->left ==
-                   NULL) { // Case 2: Node has one child to the right
+        }
+        // Case 2: Node has one child to the right
+        else if (isNullChild(root->left)) {
             bstNode *temp = root;
             root = root->right;
             free(temp);
-        } else if (root->right ==
-                   NULL) { // Case 2: Node has one child to the left
+            // Case 2: Node has one child to the left
+        } else if (isNullChild(root->right)) {
             bstNode *temp = root;
             root = root->left;
             free(temp);
-        } else { // Case 3: Node has 2 children
+            // Case 3: Node has 2 children
+        } else {
             bstNode *temp = getMin(root->right);
             root->data = temp->data;
             root->right = deleteNode(root->right, temp->data);
